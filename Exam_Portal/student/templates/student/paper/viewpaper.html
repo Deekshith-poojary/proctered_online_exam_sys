@@ -1,0 +1,183 @@
+{% extends 'student/base/base.html' %}
+
+{% block title %}View Paper{% endblock title %}
+
+{% block body %}
+
+<style>
+    video {
+            display: none; /* Hide video by default */
+            width: 200px; /* Set a smaller width */
+            height: auto; /* Maintain aspect ratio */
+            position: fixed; /* Use fixed positioning to stay in the corner */
+            top: 0; /* Align to the top edge */
+            right: 0; /* Align to the right edge */
+            border: 2px solid white; /* Optional: add a border */
+            border-radius: 10px; /* Optional: round the corners */
+            z-index: 1; /* Ensure video is above other elements */
+        }
+    #message {
+        display: block;
+    }
+    #content {
+            display: none;
+        }
+    /* Disable text selection using CSS */
+    body {
+        user-select: none; /* Prevent text selection */
+        -webkit-user-select: none; /* Chrome/Safari */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE/Edge */
+    }
+
+    /* Optionally disable text cursor */
+    body {
+        cursor: default; /* Change the cursor to the default arrow */
+    }
+</style>
+<script>
+        document.addEventListener('fullscreenchange', exitHandler);
+        document.addEventListener('webkitfullscreenchange', exitHandler);
+        document.addEventListener('mozfullscreenchange', exitHandler);
+        document.addEventListener('MSFullscreenChange', exitHandler);
+
+        function exitHandler() {
+            window.addEventListener('blur', function() {
+                alert('Session terminated due to tab switch or window blur.');
+                window.location.href = '/logout'; // Redirect to a logout page
+            });
+        }
+    function hideContent() {
+        document.getElementById('message').style.display = 'none';  
+        }
+        function showContent() {
+            document.getElementById('content').style.display = 'block';  
+        }
+    function openFullscreen() {
+            var elem = document.documentElement; 
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();  
+            } else if (elem.mozRequestFullScreen) { 
+                elem.mozRequestFullScreen();  
+            } else if (elem.webkitRequestFullscreen) { 
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { 
+                elem.msRequestFullscreen();
+            }
+        }
+    // Disable selection using mouse events
+    document.addEventListener('selectstart', function(e) {
+            e.preventDefault(); // Prevent selection action
+        });
+
+    // Prevent Alt, Ctrl, and Function (F1 to F12) key actions
+    document.addEventListener('keydown', function(e) {
+            // Disable Alt, Ctrl, and Function keys
+            if (e.altKey || e.ctrlKey || (e.keyCode >= 112 && e.keyCode <= 123)) { // F1 to F12 keycodes are from 112 to 123
+                e.preventDefault(); // Disable default action for Alt, Ctrl, and F keys
+               
+            }
+        });
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+
+    function handleButtonClick() {
+            openFullscreen();   // Second action
+              // First action
+        }
+    const videoElement = document.getElementById('cameraStream');
+
+// Function to activate the camera in the background
+function startCameraInBackground() {
+    return navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+            console.log("Camera is running in the background.");
+            // Attach the video stream to the video element and show it
+            videoElement.srcObject = stream;
+            videoElement.style.display = 'block'; // Show video after the stream starts
+        })
+        .catch(function(error) {
+            console.error("Error accessing the camera: ", error);
+        });
+}
+window.addEventListener('click', openFullscreen);
+window.addEventListener('click', showContent);
+
+window.addEventListener('click', hideContent);
+
+// Start the camera when the page loads
+window.addEventListener('load', startCameraInBackground);
+</script>
+    <video id="cameraStream" autoplay playsinline muted></video>
+
+    <div class="message">
+    <button>Go Fullscreen</button> <!-- Extra button to manually trigger fullscreen -->
+    </div>
+    <div id="content">
+
+    <center>
+        <h3> {{ qpaper.qPaperTitle }} {{ time }}</h3>
+        <input type="hidden" id="mins" value="{{ min }}">
+        <input type="hidden" id="secs" value="{{ sec }}">
+        <div>
+            <a>Time left :<a id="dmin">{{ min }}</a> mins <a id="dsec">{{ sec }}</a> seconds</a>
+        </div>
+    </center>
+    
+    <br/>
+    <form method="POST" id="examform">
+        {% csrf_token %}
+        <ol>
+            {% for ques in question_list %}
+
+            <div class="card" style="width: 90%; margin-bottom: 15px;">
+                <div class="card-body">
+                    <p class="card-text "><strong>{{ ques.question }}</strong> </p>
+                    <hr/>
+                    <input type="radio" id="optionA" name="{{ ques.question }}" value="A">
+                    <label for="optionA">{{ ques.optionA }}</label><br>
+                    <input type="radio" id="optionB" name="{{ ques.question }}" value="B">
+                    <label for="optionB">{{ ques.optionB }}</label><br>
+                    <input type="radio" id="optionC" name="{{ ques.question }}" value="C">
+                    <label for="optionC">{{ ques.optionC }}</label><br>
+                    <input type="radio" id="optionD" name="{{ ques.question }}" value="D">
+                    <label for="optionD">{{ ques.optionD }}</label><br>    
+                </div>
+            </div>
+          
+            {% endfor %}
+        </ol>
+        <input type="hidden" value="{{ qpaper.qPaperTitle}}" name="papertitle">
+        <input type="hidden" value="{{ exam }}" name="paper">
+        <center>
+            <input type="submit" class="btn btn-primary" value="Submit" name="PaperSubmit" onclick="submitFormOkay = true;">
+        </center>
+    </form>
+    <br/>
+    
+    <script type="text/javascript">
+        var milisec = 0;
+        var seconds = document.getElementById("secs").value;
+        var minutes = document.getElementById("mins").value
+        //document.getElementById("d2").value = seconds
+
+
+        function display() {
+            if (minutes == 0 && seconds == 0) {
+                document.getElementById("examform").submit();
+            }
+            if (seconds == 0) {
+                minutes = minutes - 1
+                seconds = 60
+            }
+            seconds -= 1
+            document.getElementById("dsec").innerHTML = seconds
+            document.getElementById("dmin").innerHTML = minutes
+            setTimeout("display()", 1000)
+        }
+        display()
+    </script>
+    </div>
+{% endblock body %}
